@@ -1,15 +1,23 @@
-import express, { Express, Request, Response } from "express";
+import express, { Request, Response } from "express";
 import { generateRandomString } from "../utils/utils";
 import dotenv from "dotenv";
 import request from "request";
 import session from "express-session";
+import cors from "cors";
 
 const router = express.Router();
 dotenv.config();
 
 router.use(
+  cors({
+    origin: "https://localhost:5173",
+    credentials: true,
+  })
+);
+
+router.use(
   session({
-    secret: "your_secret_key",
+    secret: process.env.SESSION_SECRET || "your_secret_key",
     resave: false,
     saveUninitialized: true,
     cookie: { secure: false },
@@ -22,7 +30,7 @@ router.get("/login", (req, res) => {
 
   const auth_query_parameters = new URLSearchParams({
     response_type: "code",
-    client_id: process.env.CLIENT_ID || "",
+    client_id: process.env.SPOTIFY_CLIENT_ID || "",
     scope: scope,
     redirect_uri: "http://localhost:1314/auth/callback",
     state: state,
@@ -36,8 +44,8 @@ router.get("/login", (req, res) => {
 
 router.get("/callback", (req, res) => {
   const code = req.query.code as string;
-  const spotify_client_id = process.env.CLIENT_ID || "";
-  const spotify_client_secret = process.env.CLIENT_SECRET || "";
+  const spotify_client_id = process.env.SPOTIFY_CLIENT_ID || "";
+  const spotify_client_secret = process.env.SPOTIFY_CLIENT_SECRET || "";
 
   const authOptions = {
     url: "https://accounts.spotify.com/api/token",
@@ -65,9 +73,18 @@ router.get("/callback", (req, res) => {
       body: { access_token: any }
     ) => {
       if (!error && response.statusCode === 200) {
-        (req.session as any).accessToken = body.access_token;
-        res.redirect("/");
+        (req as any).session.accessToken = body.access_token;
+        res.cookie("accessToken", body.access_token, {
+          httpOnly: true,
+          secure: false,
+        });
+        res.redirect("https://localhost:5173");
       } else {
+        console.error(
+          "Failed to get access token:",
+          response.statusCode,
+          error
+        );
         res
           .status(response.statusCode)
           .json({ error: "Failed to get access token" });
@@ -77,8 +94,9 @@ router.get("/callback", (req, res) => {
 });
 
 router.get("/token", (req, res) => {
-  if ((req.session as any).accessToken) {
-    res.json({ token: (req.session as any).accessToken });
+  const accessToken = req.cookies.accessToken;
+  if (accessToken) {
+    res.json({ token: accessToken });
   } else {
     res.status(401).json({ error: "Access token not available" });
   }
