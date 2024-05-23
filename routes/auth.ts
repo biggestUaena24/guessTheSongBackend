@@ -1,12 +1,12 @@
-import express, { Request, Response } from "express";
+import express, { Request, Response, NextFunction } from "express";
 import { generateRandomString } from "../utils/utils";
 import dotenv from "dotenv";
 import request from "request";
-import session from "express-session";
 import cors from "cors";
+import cookieParser from "cookie-parser";
 
-const router = express.Router();
 dotenv.config();
+const router = express.Router();
 
 router.use(
   cors({
@@ -15,14 +15,7 @@ router.use(
   })
 );
 
-router.use(
-  session({
-    secret: process.env.SESSION_SECRET || "your_secret_key",
-    resave: false,
-    saveUninitialized: true,
-    cookie: { secure: false },
-  })
-);
+router.use(cookieParser());
 
 router.get("/login", (req, res) => {
   const scope = "streaming user-read-email user-read-private";
@@ -32,7 +25,7 @@ router.get("/login", (req, res) => {
     response_type: "code",
     client_id: process.env.SPOTIFY_CLIENT_ID || "",
     scope: scope,
-    redirect_uri: "http://localhost:1314/auth/callback",
+    redirect_uri: "https://localhost:1314/auth/callback",
     state: state,
   });
 
@@ -51,7 +44,7 @@ router.get("/callback", (req, res) => {
     url: "https://accounts.spotify.com/api/token",
     form: {
       code: code,
-      redirect_uri: "http://localhost:1314/auth/callback",
+      redirect_uri: "https://localhost:1314/auth/callback",
       grant_type: "authorization_code",
     },
     headers: {
@@ -73,11 +66,12 @@ router.get("/callback", (req, res) => {
       body: { access_token: any }
     ) => {
       if (!error && response.statusCode === 200) {
-        (req as any).session.accessToken = body.access_token;
-        res.cookie("accessToken", body.access_token, {
+        res.cookie("spotifyToken", body.access_token, {
           httpOnly: true,
-          secure: false,
+          secure: true,
+          maxAge: 1000 * 60 * 60 * 24,
         });
+
         res.redirect("https://localhost:5173");
       } else {
         console.error(
@@ -94,12 +88,7 @@ router.get("/callback", (req, res) => {
 });
 
 router.get("/token", (req, res) => {
-  const accessToken = req.cookies.accessToken;
-  if (accessToken) {
-    res.json({ token: accessToken });
-  } else {
-    res.status(401).json({ error: "Access token not available" });
-  }
+  res.json({ token: req.cookies.spotifyToken });
 });
 
 export default router;
