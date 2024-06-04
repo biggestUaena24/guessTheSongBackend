@@ -88,6 +88,8 @@ router.get("/callback", (req, res) => {
 });
 
 router.get("/token", (req, res) => {
+  // After the user asks for a token, it means that the token shhould already be setted
+  // So we are safe to return the token and we also want to set the cookie for spotify user id for the frontend
   res.json({ token: req.cookies.spotifyToken });
 });
 
