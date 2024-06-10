@@ -1,7 +1,7 @@
-import express, { Request, Response, NextFunction } from "express";
+import express from "express";
 import { generateRandomString } from "../utils/utils";
 import dotenv from "dotenv";
-import request from "request";
+import request, { cookie } from "request";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 
@@ -87,9 +87,21 @@ router.get("/callback", (req, res) => {
   );
 });
 
-router.get("/token", (req, res) => {
-  // After the user asks for a token, it means that the token shhould already be setted
-  // So we are safe to return the token and we also want to set the cookie for spotify user id for the frontend
+router.get("/token", async (req, res) => {
+  const result = await fetch("https://api.spotify.com/v1/me", {
+    method: "GET",
+    headers: { Authorization: `Bearer ${req.cookies.spotifyToken}` },
+  });
+
+  const { id } = await result.json();
+
+  if (id != null) {
+    res.cookie("spotifyUserId", id, {
+      httpOnly: true,
+      secure: true,
+      maxAge: 1000 * 60 * 60 * 24,
+    });
+  }
   res.json({ token: req.cookies.spotifyToken });
 });
 

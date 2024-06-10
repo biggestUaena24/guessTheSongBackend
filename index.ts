@@ -1,6 +1,7 @@
 import express, { Express } from "express";
 import dotenv from "dotenv";
 import authRoutes from "./routes/auth";
+import spotifyRoutes from "./routes/spotify";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import https from "https";
@@ -25,6 +26,7 @@ app.use(
 app.use(cookieParser());
 
 app.use("/auth", authRoutes);
+app.use("/spotify", spotifyRoutes);
 
 const httpsServer = https.createServer(credentials, app);
 
