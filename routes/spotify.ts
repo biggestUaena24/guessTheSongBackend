@@ -21,6 +21,29 @@ router.get("/playlists", async (req, res) => {
   const token = req.cookies.spotifyToken;
 
   const result = await getPlaylists(userId, token);
+  if (result.total > 50) {
+    const playlistUrls = [];
+    for (let i = 50; i < result.playlists.total; i += 50) {
+      playlistUrls.push(
+        `https://api.spotify.com/v1/users/${userId}/playlists?offset=${i}&limit=50`
+      );
+    }
+
+    const playlistResults = await Promise.all(
+      playlistUrls.map((url) =>
+        fetch(url, {
+          method: "GET",
+          headers: { Authorization: `Bearer ${token}` },
+        }).then((res) => res.json())
+      )
+    );
+
+    playlistResults.forEach((result) => {
+      result.playlists.items.forEach((item: any) => {
+        result.playlists.items.push(item);
+      });
+    });
+  }
 
   res.json({ playlists: result });
 });
