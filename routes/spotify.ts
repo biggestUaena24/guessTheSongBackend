@@ -45,7 +45,7 @@ router.get("/playlists", async (req, res) => {
     });
   }
 
-  res.json({ playlists: result });
+  res.json({ playlists: result.items });
 });
 
 router.post("/tracks", async (req, res) => {
