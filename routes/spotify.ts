@@ -77,11 +77,10 @@ router.post("/tracks", async (req, res) => {
       )
     );
 
-    let tracks = trackResults.reduce((acc, result) => {
+    const tracks = trackResults.reduce((acc, result) => {
       acc.items = acc.items.concat(result.items);
       return acc;
     });
-    tracks = tracks.filter((uri: string) => uri.includes("spotify:track:"));
 
     res.json({ tracks });
   }
