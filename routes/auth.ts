@@ -18,7 +18,7 @@ router.use(
 router.use(cookieParser());
 
 router.get("/login", (req, res) => {
-  const scope = "streaming user-read-email user-read-private";
+  const scope = "streaming user-read-email user-read-private user-library-read";
   const state = generateRandomString(16);
 
   const auth_query_parameters = new URLSearchParams({
