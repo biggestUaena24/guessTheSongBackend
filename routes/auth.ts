@@ -69,7 +69,7 @@ router.get("/callback", (req, res) => {
         res.cookie("spotifyToken", body.access_token, {
           httpOnly: true,
           secure: true,
-          maxAge: 1000 * 60 * 60 * 24,
+          maxAge: 1000 * 60 * 60,
         });
 
         res.redirect("https://localhost:5173");
