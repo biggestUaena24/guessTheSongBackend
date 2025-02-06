@@ -63,10 +63,16 @@ router.get("/callback", (req, res) => {
     (
       error: any,
       response: { statusCode: number },
-      body: { access_token: any }
+      body: { access_token: any; refresh_token: any }
     ) => {
       if (!error && response.statusCode === 200) {
         res.cookie("spotifyToken", body.access_token, {
+          httpOnly: true,
+          secure: true,
+          maxAge: 1000 * 60 * 60,
+        });
+
+        res.cookie("refreshToken", body.refresh_token, {
           httpOnly: true,
           secure: true,
           maxAge: 1000 * 60 * 60,
@@ -82,6 +88,52 @@ router.get("/callback", (req, res) => {
         res
           .status(response.statusCode)
           .json({ error: "Failed to get access token" });
+      }
+    }
+  );
+});
+
+router.get("/refresh_token", function (req, res) {
+  var refresh_token = req.cookies.refreshToken;
+  const spotify_client_id = process.env.SPOTIFY_CLIENT_ID || "";
+  const spotify_client_secret = process.env.SPOTIFY_CLIENT_SECRET || "";
+
+  var authOptions = {
+    url: "https://accounts.spotify.com/api/token",
+    headers: {
+      "content-type": "application/x-www-form-urlencoded",
+      Authorization:
+        "Basic " +
+        Buffer.from(spotify_client_id + ":" + spotify_client_secret).toString(
+          "base64"
+        ),
+    },
+    form: {
+      grant_type: "refresh_token",
+      refresh_token: refresh_token,
+    },
+    json: true,
+  };
+
+  request.post(
+    authOptions,
+    (
+      error: any,
+      response: { statusCode: number },
+      body: { access_token: any; refresh_token: any }
+    ) => {
+      if (!error && response.statusCode === 200) {
+        res.cookie("spotifyToken", body.access_token, {
+          httpOnly: true,
+          secure: true,
+          maxAge: 1000 * 60 * 60,
+        });
+
+        res.cookie("refreshToken", body.refresh_token, {
+          httpOnly: true,
+          secure: true,
+          maxAge: 1000 * 60 * 60,
+        });
       }
     }
   );
