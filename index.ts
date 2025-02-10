@@ -23,6 +23,13 @@ app.use(
   })
 );
 
+app.use((err: any, req: any, res: any, next: any) => {
+  console.error("Error:", err.stack); // Log the error
+  res
+    .status(500)
+    .json({ message: "Internal Server Error", error: err.message });
+});
+
 app.use(cookieParser());
 app.use(express.json());
 
