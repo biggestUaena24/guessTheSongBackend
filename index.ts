@@ -22,19 +22,47 @@ app.use(
     credentials: true,
   })
 );
-
-app.use((err: any, req: any, res: any, next: any) => {
-  console.error("Error:", err.stack); // Log the error
-  res
-    .status(500)
-    .json({ message: "Internal Server Error", error: err.message });
-});
-
 app.use(cookieParser());
 app.use(express.json());
 
 app.use("/auth", authRoutes);
 app.use("/spotify", spotifyRoutes);
+
+app.use(
+  (
+    err: Error,
+    req: express.Request,
+    res: express.Response,
+    next: express.NextFunction
+  ) => {
+    if (err instanceof SyntaxError && "body" in err) {
+      return res.status(400).json({ message: "Invalid JSON format" });
+    }
+    next(err);
+  }
+);
+
+app.use(
+  (
+    err: Error,
+    req: express.Request,
+    res: express.Response,
+    next: express.NextFunction
+  ) => {
+    console.error("[ERROR]", new Date().toISOString(), err);
+    res.status(500).json({
+      message: "Internal Server Error",
+      error: process.env.NODE_ENV === "development" ? err.message : undefined,
+    });
+  }
+);
+
+process.on(
+  "unhandledRejection",
+  (reason: Error | any, promise: Promise<any>) => {
+    console.error("Unhandled Rejection at:", promise, "reason:", reason);
+  }
+);
 
 const httpsServer = https.createServer(credentials, app);
 
